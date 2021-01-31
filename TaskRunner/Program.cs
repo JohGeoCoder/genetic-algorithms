@@ -14,17 +14,14 @@ namespace TaskRunner
         {
             var rng = new Random();
 
-            var initialPopulation = new IncrementingBoard[1000];
+            var initialPopulation = new IncrementingBoard[200];
             for(int i = 0; i < initialPopulation.Length; i++)
             {
-                initialPopulation[i] = new IncrementingBoard(1000);
+                initialPopulation[i] = new IncrementingBoard(200);
             }
 
-            var runner = new Runner(initialPopulation, iterations: 5000, matePopulationCutoff: 200, keepTopCutoff: 20);
-
+            var runner = new Runner(initialPopulation, 5000);
             runner.Start();
-
-            Console.ReadKey();
         }
     }
 }
