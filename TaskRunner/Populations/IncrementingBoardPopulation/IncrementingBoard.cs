@@ -5,7 +5,7 @@ using TaskRunner.GeneticStructures;
 
 namespace TaskRunner.Populations
 {
-    public class IncrementingBoard : IOrganism<long[]>
+    public class IncrementingBoard : IOrganism
     {
         public long[] GeneInfo { get; set; }
         private Random Rng { get; }
@@ -35,6 +35,30 @@ namespace TaskRunner.Populations
         public override string ToString()
         {
             return string.Join(",", GeneInfo);
+        }
+
+        public void Mate(IOrganism parent1, IOrganism parent2)
+        {
+            var parent1Cast = (IncrementingBoard)parent1;
+            var parent2Cast = (IncrementingBoard)parent2;
+
+            var cutoff = Rng.Next(1, parent1Cast.GeneInfo.Length - 1);
+
+            for (int i = 0; i < cutoff; i++)
+            {
+                GeneInfo[i] = parent1Cast.GeneInfo[i];
+            }
+
+            for (int i = cutoff; i < parent2Cast.GeneInfo.Length; i++)
+            {
+                GeneInfo[i] = parent2Cast.GeneInfo[i];
+            }
+
+            //Mutation
+            if (Rng.Next(0, 100) < 2)
+            {
+                GeneInfo[Rng.Next(0, GeneInfo.Length)] = Rng.Next(0, GeneInfo.Length);
+            }
         }
     }
 }
