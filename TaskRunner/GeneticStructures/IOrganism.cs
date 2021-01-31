@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace TaskRunner.GeneticStructures
@@ -85,26 +86,70 @@ namespace TaskRunner.GeneticStructures
                 var matePopulation = new HashSet<IOrganism>(sortedOrganisms[0..MatePopulationCutoff]);
                 var survivors = new HashSet<IOrganism>(sortedOrganisms[0..KeepTopCutoff]);
 
-                //Generate new organisms with the best organisms
-                for(int i = 0; i < Population.Organisms.Length; i++)
+                var processesRemaining = NextGeneration.Organisms.Length;
+                using var resetEvent = new ManualResetEvent(false);
+                for (int i = 0; i < NextGeneration.Organisms.Length; i++)
                 {
-                    //Clone the survivors over to the next generation
-                    if (survivors.Contains(Population.Organisms[i]))
+                    ThreadPool.QueueUserWorkItem(new WaitCallback(x =>
                     {
-                        NextGeneration.Organisms[i].Clone(Population.Organisms[i]);
-                        continue;
-                    }
+                        var index = (int)x;
 
-                    //Replace this organism with an offspring of two random best organisms.
-                    var parentIndex1 = Rng.Next(0, MatePopulationCutoff - 1);
-                    var parentIndex2 = Rng.Next(parentIndex1 + 1, MatePopulationCutoff);
+                        //Clone the survivors over to the next generation
+                        if (survivors.Contains(Population.Organisms[index]))
+                        {
+                            NextGeneration.Organisms[index].Clone(Population.Organisms[index]);
 
-                    var parent1 = sortedOrganisms[parentIndex1];
-                    var parent2 = sortedOrganisms[parentIndex2];
+                            if (Interlocked.Decrement(ref processesRemaining) == 0)
+                            {
+                                resetEvent.Set();
+                            }
 
-                    NextGeneration.Organisms[i].Mate(parent1, parent2);
-                    NextGeneration.Organisms[i].Mutate(MutationRate);
+                            return;
+                        }
+
+                        //Replace this organism with an offspring of two random best organisms.
+                        var parentIndex1 = Rng.Next(0, MatePopulationCutoff - 1);
+                        var parentIndex2 = Rng.Next(parentIndex1 + 1, MatePopulationCutoff);
+
+                        var parent1 = sortedOrganisms[parentIndex1];
+                        var parent2 = sortedOrganisms[parentIndex2];
+
+                        NextGeneration.Organisms[index].Mate(parent1, parent2);
+                        NextGeneration.Organisms[index].Mutate(MutationRate);
+
+                        if (Interlocked.Decrement(ref processesRemaining) == 0)
+                        {
+                            resetEvent.Set();
+                        }
+
+                    }), i);
                 }
+
+                resetEvent.WaitOne();
+
+                ////Generate new organisms with the best organisms
+                //for (int i = 0; i < Population.Organisms.Length; i++)
+                //{
+                //    tasks[i] = new Task(() =>
+                //    {
+                //        //Clone the survivors over to the next generation
+                //        if (survivors.Contains(Population.Organisms[i]))
+                //        {
+                //            NextGeneration.Organisms[i].Clone(Population.Organisms[i]);
+                //            return;
+                //        }
+
+                //        //Replace this organism with an offspring of two random best organisms.
+                //        var parentIndex1 = Rng.Next(0, MatePopulationCutoff - 1);
+                //        var parentIndex2 = Rng.Next(parentIndex1 + 1, MatePopulationCutoff);
+
+                //        var parent1 = sortedOrganisms[parentIndex1];
+                //        var parent2 = sortedOrganisms[parentIndex2];
+
+                //        NextGeneration.Organisms[i].Mate(parent1, parent2);
+                //        NextGeneration.Organisms[i].Mutate(MutationRate);
+                //    });
+                //}
 
                 //Switch the current population and the next generation.
                 var tempGeneration = Population;
