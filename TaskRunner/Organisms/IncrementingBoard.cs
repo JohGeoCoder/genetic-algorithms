@@ -61,5 +61,15 @@ namespace TaskRunner.Populations
                 GeneInfo[Rng.Next(0, GeneInfo.Length)] = Rng.Next(0, GeneInfo.Length);
             }
         }
+
+        public void Clone(IOrganism parent)
+        {
+            var parentCast = (IncrementingBoard)parent;
+
+            for(int i = 0; i < GeneInfo.Length; i++)
+            {
+                GeneInfo[i] = parentCast.GeneInfo[i];
+            }
+        }
     }
 }

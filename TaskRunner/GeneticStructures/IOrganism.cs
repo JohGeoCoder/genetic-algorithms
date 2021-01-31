@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace TaskRunner.GeneticStructures
 {
@@ -28,21 +29,29 @@ namespace TaskRunner.GeneticStructures
         void Mate(IOrganism parent1, IOrganism parent2);
 
         void Mutate(decimal probability);
+
+        void Clone(IOrganism parent);
     }
 
     public class Runner
     {
         protected int Iterations { get; }
-        protected Population Population { get; }
+        protected Population Population { get; set; }
+        protected Population NextGeneration { get; set; }
         protected Random Rng { get; } = new Random();
         protected decimal MutationRate { get; set; }
+        protected int MatePopulationCutoff { get; set; }
+        protected int KeepTopCutoff { get; set; }
         private IOrganism AbsoluteBestOrganism { get; set; }
 
-        public Runner(IEnumerable<IOrganism> initialPopulation, int iterations = 10000, decimal mutationRate = 0.02m)
+        public Runner(IEnumerable<IOrganism> initialPopulation, int iterations = 10000, decimal mutationRate = 0.02m, int matePopulationCutoff = 20, int keepTopCutoff = 5)
         {
             Iterations = iterations;
             Population = new Population(initialPopulation, Rng);
+            NextGeneration = new Population(initialPopulation, Rng);
             MutationRate = mutationRate;
+            MatePopulationCutoff = matePopulationCutoff;
+            KeepTopCutoff = keepTopCutoff;
         }
 
         public void Start()
@@ -73,24 +82,34 @@ namespace TaskRunner.GeneticStructures
                 }
 
                 //Keep the best organisms
-                var bestOrganisms = new HashSet<IOrganism>(sortedOrganisms[0..(Population.Organisms.Length / 10)]);
+                var matePopulation = new HashSet<IOrganism>(sortedOrganisms[0..MatePopulationCutoff]);
+                var survivors = new HashSet<IOrganism>(sortedOrganisms[0..KeepTopCutoff]);
 
                 //Generate new organisms with the best organisms
                 for(int i = 0; i < Population.Organisms.Length; i++)
                 {
-                    if (bestOrganisms.Contains(Population.Organisms[i]))
+                    //Clone the survivors over to the next generation
+                    if (survivors.Contains(Population.Organisms[i]))
                     {
+                        NextGeneration.Organisms[i].Clone(Population.Organisms[i]);
                         continue;
                     }
 
                     //Replace this organism with an offspring of two random best organisms.
-                    var organismIndex1 = Rng.Next(0, (Population.Organisms.Length / 10) - 1);
-                    var organismIndex2 = Rng.Next(organismIndex1 + 1, Population.Organisms.Length / 10);
+                    var parentIndex1 = Rng.Next(0, MatePopulationCutoff - 1);
+                    var parentIndex2 = Rng.Next(parentIndex1 + 1, MatePopulationCutoff);
 
-                    Population.Organisms[i].Mate(sortedOrganisms[organismIndex1], sortedOrganisms[organismIndex2]);
+                    var parent1 = sortedOrganisms[parentIndex1];
+                    var parent2 = sortedOrganisms[parentIndex2];
 
-                    Population.Organisms[i].Mutate(MutationRate);
+                    NextGeneration.Organisms[i].Mate(parent1, parent2);
+                    NextGeneration.Organisms[i].Mutate(MutationRate);
                 }
+
+                //Switch the current population and the next generation.
+                var tempGeneration = Population;
+                Population = NextGeneration;
+                NextGeneration = Population;
 
                 Console.WriteLine($"Iteration {iteration}: {Population.Score}");
             }
