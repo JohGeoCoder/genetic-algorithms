@@ -17,10 +17,10 @@ namespace TaskRunner
             var initialPopulation = new IncrementingBoard[200];
             for(int i = 0; i < initialPopulation.Length; i++)
             {
-                initialPopulation[i] = new IncrementingBoard(200, rng);
+                initialPopulation[i] = new IncrementingBoard(200);
             }
 
-            var runner = new Runner(new Population(initialPopulation, rng), 5000);
+            var runner = new Runner(initialPopulation, 5000);
             runner.Start();
         }
     }

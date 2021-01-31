@@ -10,8 +10,8 @@ namespace TaskRunner.GeneticStructures
     public class Population
     {
         public IOrganism[] Organisms { get; }
-        public decimal MutationRate { get; set; }
         public Random Rng { get; }
+        public decimal MutationRate { get; set; }
         public long Score => Organisms.Sum(o => o.Score());
 
         public Population(IEnumerable<IOrganism> initialPopulation, Random rng)
@@ -26,19 +26,23 @@ namespace TaskRunner.GeneticStructures
         long Score();
 
         void Mate(IOrganism parent1, IOrganism parent2);
+
+        void Mutate(decimal probability);
     }
 
     public class Runner
     {
         protected int Iterations { get; }
         protected Population Population { get; }
-        protected Random Rng => Population.Rng;
+        protected Random Rng { get; } = new Random();
+        protected decimal MutationRate { get; set; }
         private IOrganism AbsoluteBestOrganism { get; set; }
 
-        public Runner(Population population, int iterations = 10000)
+        public Runner(IEnumerable<IOrganism> initialPopulation, int iterations = 10000, decimal mutationRate = 0.02m)
         {
             Iterations = iterations;
-            Population = population;
+            Population = new Population(initialPopulation, Rng);
+            MutationRate = mutationRate;
         }
 
         public void Start()
@@ -84,6 +88,8 @@ namespace TaskRunner.GeneticStructures
                     var organismIndex2 = Rng.Next(organismIndex1 + 1, Population.Organisms.Length / 10);
 
                     Population.Organisms[i].Mate(sortedOrganisms[organismIndex1], sortedOrganisms[organismIndex2]);
+
+                    Population.Organisms[i].Mutate(MutationRate);
                 }
 
                 Console.WriteLine($"Iteration {iteration}: {Population.Score}");

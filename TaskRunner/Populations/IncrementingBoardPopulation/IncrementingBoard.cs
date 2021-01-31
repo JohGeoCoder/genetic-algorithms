@@ -8,12 +8,10 @@ namespace TaskRunner.Populations
     public class IncrementingBoard : IOrganism
     {
         public long[] GeneInfo { get; set; }
-        private Random Rng { get; }
+        private Random Rng { get; } = new Random();
 
-        public IncrementingBoard(int boardSize, Random rng)
-        {
-            Rng = rng;
-            
+        public IncrementingBoard(int boardSize)
+        {            
             GeneInfo = new long[boardSize];
             for (int i = 0; i < boardSize; i++)
             {
@@ -53,7 +51,10 @@ namespace TaskRunner.Populations
             {
                 GeneInfo[i] = parent2Cast.GeneInfo[i];
             }
+        }
 
+        public void Mutate(decimal probability)
+        {
             //Mutation
             if (Rng.Next(0, 100) < 2)
             {
