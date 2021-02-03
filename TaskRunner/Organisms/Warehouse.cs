@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using TaskRunner.GeneticStructures;
@@ -18,8 +19,20 @@ namespace TaskRunner.Organisms
         public Warehouse(int aisleCount, int aisleDepth, IEnumerable<Product> products, IEnumerable<PickTicket> pickTickets)
         {
             Shelves = new int?[aisleCount * aisleDepth];
-            AisleDepth = aisleDepth;
 
+            //Randomly place the items on the shelves.
+            var shelfIndices = Enumerable.Range(0, Shelves.Length - 1).ToList();
+            foreach(var product in products)
+            {
+                var tempIndex = Rng.Next(0, shelfIndices.Count);
+                var randomShelfIndex = shelfIndices[tempIndex];
+
+                Shelves[randomShelfIndex] = product.Id;
+
+                shelfIndices.RemoveAt(tempIndex);
+            }
+
+            AisleDepth = aisleDepth;
             Products = products.ToDictionary(k => k.Id, v => v);
             PickTickets = pickTickets.ToArray();
         }
@@ -71,17 +84,23 @@ namespace TaskRunner.Organisms
         {
             long score = 0;
 
+            var productCoordinatesLookup = new Dictionary<int, int[]>();
+            foreach(var product in Products.Values)
+            {
+                productCoordinatesLookup.Add(product.Id, GetProductCoordinates(product.Id));
+            }
+
             //Score each pick ticket.
             foreach(var pickTicket in PickTickets)
             {
                 //Calculate the spread of the pick ticket items
                 for(int i = 0; i < pickTicket.ProductIds.Length - 1; i++)
                 {
-                    var pick1Coords = GetProductCoordinates(pickTicket.ProductIds[i]);
+                    var pick1Coords = productCoordinatesLookup[pickTicket.ProductIds[i]];
 
                     for(int j = i; j < pickTicket.ProductIds.Length; j++)
                     {
-                        var pick2Coords = GetProductCoordinates(pickTicket.ProductIds[j]);
+                        var pick2Coords = productCoordinatesLookup[pickTicket.ProductIds[j]];
 
                         var distance = (long)Math.Sqrt((pick2Coords[0] - pick1Coords[0]) * (pick2Coords[0] - pick1Coords[0]) + (pick2Coords[1] - pick1Coords[1]) * (pick2Coords[1] - pick1Coords[1]));
 
@@ -90,7 +109,7 @@ namespace TaskRunner.Organisms
                 }
 
                 //Calculate the distance of the center of mass of the items from the origin for each pick ticket
-                var productCoordinates = pickTicket.ProductIds.Select(p => GetProductCoordinates(p));
+                var productCoordinates = pickTicket.ProductIds.Select(p => productCoordinatesLookup[p]);
                 var xAvg = productCoordinates.Average(c => c[0]);
                 var yAvg = productCoordinates.Average(c => c[1]);
 
@@ -102,8 +121,8 @@ namespace TaskRunner.Organisms
 
         private int[] GetProductCoordinates(int productId)
         {
-            var product = Products.GetValueOrDefault(productId);
-            var productShelfIndex = Array.IndexOf(Shelves, product);
+            //var product = Products.GetValueOrDefault(productId);
+            var productShelfIndex = Shelves.ToList().IndexOf(productId);
 
             return new int[] { productShelfIndex / AisleDepth, productShelfIndex % AisleDepth };
         }
