@@ -1,0 +1,122 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using TaskRunner.GeneticStructures;
+
+namespace TaskRunner.Organisms
+{
+    public class Warehouse : IOrganism
+    {
+        public Dictionary<int, Product> Products { get; set; }
+        public PickTicket[] PickTickets { get; set; }
+        public int?[] Shelves { get; set; }
+        private int AisleDepth { get; set; }
+        public Random Rng { get; set; } = new Random();
+
+
+        public Warehouse(int aisleCount, int aisleDepth, IEnumerable<Product> products, IEnumerable<PickTicket> pickTickets)
+        {
+            Shelves = new int?[aisleCount * aisleDepth];
+            AisleDepth = aisleDepth;
+
+            Products = products.ToDictionary(k => k.Id, v => v);
+            PickTickets = pickTickets.ToArray();
+        }
+
+        public void Clone(IOrganism parent)
+        {
+            var p = (Warehouse)parent;
+
+            //Copy the shelves
+            for(int i = 0; i < Shelves.Length; i++)
+            {
+                Shelves[i] = p.Shelves[i];
+            }
+        }
+
+        public void Mate(IOrganism parent1, IOrganism parent2)
+        {
+            var p1 = (Warehouse)parent1;
+            var p2 = (Warehouse)parent2;
+
+            var shelfLength = p1.Shelves.Length;
+
+            var cutoff = Rng.Next(1, shelfLength - 1);
+
+            for(var i = 0; i < cutoff; i++)
+            {
+                Shelves[i] = p1.Shelves[i];
+            }
+
+            for(var i = cutoff; i < shelfLength; i++)
+            {
+                Shelves[i] = p2.Shelves[i];
+            }
+        }
+
+        public void Mutate(decimal probability)
+        {
+            //Randomly select two shelves
+            var shelf1Pos = Rng.Next(Shelves.Length);
+            var shelfPos2 = Rng.Next(Shelves.Length);
+
+            //Swap their contents
+            var tempShelf = Shelves[shelf1Pos];
+            Shelves[shelf1Pos] = Shelves[shelfPos2];
+            Shelves[shelfPos2] = tempShelf;
+        }
+
+        public long Score()
+        {
+            long score = 0;
+
+            //Score each pick ticket.
+            foreach(var pickTicket in PickTickets)
+            {
+                //Calculate the spread of the pick ticket items
+                for(int i = 0; i < pickTicket.ProductIds.Length - 1; i++)
+                {
+                    var pick1Coords = GetProductCoordinates(pickTicket.ProductIds[i]);
+
+                    for(int j = i; j < pickTicket.ProductIds.Length; j++)
+                    {
+                        var pick2Coords = GetProductCoordinates(pickTicket.ProductIds[j]);
+
+                        var distance = (long)Math.Sqrt((pick2Coords[0] - pick1Coords[0]) * (pick2Coords[0] - pick1Coords[0]) + (pick2Coords[1] - pick1Coords[1]) * (pick2Coords[1] - pick1Coords[1]));
+
+                        score += distance;
+                    }
+                }
+
+                //Calculate the distance of the center of mass of the items from the origin for each pick ticket
+                var productCoordinates = pickTicket.ProductIds.Select(p => GetProductCoordinates(p));
+                var xAvg = productCoordinates.Average(c => c[0]);
+                var yAvg = productCoordinates.Average(c => c[1]);
+
+                score += (int)(yAvg + xAvg);
+            }
+
+            return score;
+        }
+
+        private int[] GetProductCoordinates(int productId)
+        {
+            var product = Products.GetValueOrDefault(productId);
+            var productShelfIndex = Array.IndexOf(Shelves, product);
+
+            return new int[] { productShelfIndex / AisleDepth, productShelfIndex % AisleDepth };
+        }
+    }
+
+    public class Product
+    {
+        public int Id { get; set; }
+        public string ProductName { get; set; }
+    }
+
+    public class PickTicket
+    {
+        public int[] ProductIds { get; set; }
+    }
+}
