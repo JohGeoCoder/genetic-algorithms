@@ -66,7 +66,8 @@ namespace TaskRunner.GeneticStructures
                 {
                     Score = o.Score(),
                     Organism = o
-                });
+                })
+                .ToArray();
 
                 //Sort the organisms by score
                 var sortedOrganisms = scoredOrganisms
