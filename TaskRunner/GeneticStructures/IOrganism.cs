@@ -113,6 +113,12 @@ namespace TaskRunner.GeneticStructures
                 NextGeneration = Population;
 
                 Console.WriteLine($"Iteration {iteration}: {Population.Score}");
+                if(iteration % 10 == 0)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine($"Current best Organism: {AbsoluteBestOrganism.Score()}");
+                    Console.WriteLine(AbsoluteBestOrganism.ToString());
+                }
             }
 
             var bestOrganism = Population.Organisms.Select(o => new
@@ -122,10 +128,6 @@ namespace TaskRunner.GeneticStructures
             })
             .OrderBy(o => o.Score)
             .First();
-
-            Console.WriteLine("Final Population Best Organism");
-            Console.WriteLine(bestOrganism.Score);
-            Console.WriteLine(bestOrganism.ToString());
 
             Console.WriteLine();
             Console.WriteLine("Absolute Best Organism");
