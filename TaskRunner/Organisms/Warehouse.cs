@@ -121,8 +121,15 @@ namespace TaskRunner.Organisms
 
         private int[] GetProductCoordinates(int productId)
         {
-            //var product = Products.GetValueOrDefault(productId);
-            var productShelfIndex = Shelves.ToList().IndexOf(productId);
+            var productShelfIndex = -1;
+            for(int i = 0; i < Shelves.Length; i++)
+            {
+                if(Shelves[i] == productId)
+                {
+                    productShelfIndex = i;
+                    break;
+                }
+            }
 
             return new int[] { productShelfIndex / AisleDepth, productShelfIndex % AisleDepth };
         }
