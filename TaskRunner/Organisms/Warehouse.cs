@@ -133,6 +133,22 @@ namespace TaskRunner.Organisms
 
             return new int[] { productShelfIndex / AisleDepth, productShelfIndex % AisleDepth };
         }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine();
+            for (int i = 0; i < Shelves.Length; i++)
+            {
+                if (i % AisleDepth == 0)
+                {
+                    sb.AppendLine();
+                }
+                sb.Append(Shelves[i].ToString().PadLeft(4));
+            }
+
+            return sb.ToString();
+        }
     }
 
     public class Product
