@@ -64,7 +64,6 @@ namespace TaskRunner.Organisms
 
             //Build the initial child and keep track of unused products.
             var usedIdDictionary = new Dictionary<int, int>();
-            var unusedIdDictionary = new Dictionary<int, int>();
 
             //Place the dominant genes (products) on the shelves.
             for (var i = 0; i < p1.Shelves.Length; i++)
@@ -109,7 +108,8 @@ namespace TaskRunner.Organisms
                 }
             }
 
-            //Place the unused Products wherever they might fit.
+            //Identify the unused Product IDs
+            var unusedIdSet = new HashSet<int>();
             for (var i = 0; i < p1.Shelves.Length; i++)
             {
                 //Determine the unused product ID
@@ -132,57 +132,12 @@ namespace TaskRunner.Organisms
                         continue;
                     }
 
-                    //Track this unused Product ID if it hasn't been already. If it has, ponder potential placement
-                    if (unusedIdDictionary.ContainsKey(currentUnusedId.Value))
-                    {
-                        /**
-                         * If both the current shelf and the shelf of the previously unused Product ID has
-                         * a product in it, TODO
-                         */
-                        if (Shelves[i].HasValue && Shelves[unusedIdDictionary[currentUnusedId.Value]].HasValue)
-                        {
-                            //Do nothing.
-                        }
-                        //If this shelf has a Product, place the unused Product ID in the previously unused shelf
-                        else if (Shelves[i].HasValue)
-                        {
-                            Shelves[unusedIdDictionary[currentUnusedId.Value]] = currentUnusedId;
-                            usedIdDictionary.Add(currentUnusedId.Value, unusedIdDictionary[currentUnusedId.Value]);
-                            unusedIdDictionary.Remove(currentUnusedId.Value);
-                        }
-                        //If the previously unused shelf has a product and this one is empty, place the unused Product here.
-                        else if (Shelves[unusedIdDictionary[currentUnusedId.Value]].HasValue)
-                        {
-                            Shelves[i] = currentUnusedId;
-                            usedIdDictionary.Add(currentUnusedId.Value, i);
-                            unusedIdDictionary.Remove(currentUnusedId.Value);
-                        }
-                        //Neither shelf has a product. Pick one randomly.
-                        else
-                        {
-                            if (Rng.NextBoolean())
-                            {
-                                Shelves[i] = currentUnusedId;
-                                usedIdDictionary.Add(currentUnusedId.Value, i);
-                            }
-                            else
-                            {
-                                Shelves[unusedIdDictionary[currentUnusedId.Value]] = currentUnusedId;
-                                usedIdDictionary.Add(currentUnusedId.Value, unusedIdDictionary[currentUnusedId.Value]);
-                            }
-
-                            unusedIdDictionary.Remove(currentUnusedId.Value);
-                        }
-                    }
-                    else
-                    {
-                        unusedIdDictionary.Add(currentUnusedId.Value, i);
-                    }
+                    unusedIdSet.Add(currentUnusedId.Value);
                 }
             }
 
             //Place the straggling items in random locations in the warehouse.
-            if (unusedIdDictionary.Any())
+            if (unusedIdSet.Any())
             {
                 //Find all the empty shelves.
                 var emptyShelves = new List<int>();
@@ -191,7 +146,7 @@ namespace TaskRunner.Organisms
                     if (!Shelves[i].HasValue) emptyShelves.Add(i);
                 }
 
-                foreach(var unplacedProduct in unusedIdDictionary.Keys)
+                foreach(var unplacedProduct in unusedIdSet)
                 {
                     var shelf = emptyShelves[Rng.Next(emptyShelves.Count)];
 
