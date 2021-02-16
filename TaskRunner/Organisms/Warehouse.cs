@@ -32,13 +32,6 @@ namespace TaskRunner.Organisms
                 shelfIndices.RemoveAt(tempIndex);
             }
 
-
-
-            if(Shelves.All(s => s.HasValue))
-            {
-                var i = 1;
-            }
-
             AisleDepth = aisleDepth;
             Products = products.ToDictionary(k => k.Id, v => v);
             PickTickets = pickTickets.ToArray();
@@ -70,209 +63,146 @@ namespace TaskRunner.Organisms
             var cutoff = Rng.Next(1, shelfLength - 1);
 
             //Build the initial child and keep track of unused products.
-            var usedIds = new HashSet<int>();
-            var duplicateUsedIds = new HashSet<int>();
-            var unusedIds = new HashSet<int>();
-            var duplicateUnusedIds = new Queue<int>();
+            var usedIdDictionary = new Dictionary<int, int>();
+            var unusedIdDictionary = new Dictionary<int, int>();
+
+            //Place the dominant genes (products) on the shelves.
             for (var i = 0; i < p1.Shelves.Length; i++)
             {
-                //Determine the used an unused product IDs
+                //Determine the used product ID
                 int? currentUsedId;
-                int? currentUnusedId;
                 if(i < cutoff)
                 {
                     currentUsedId = p1.Shelves[i];
-                    currentUnusedId = p2.Shelves[i];
                 }
                 else
                 {
                     currentUsedId = p2.Shelves[i];
+                }
+
+                //Place the used Product IDs
+                if (currentUsedId.HasValue)
+                {
+                    /**
+                     * If this Product has already been placed on a previous shelf, then
+                     * we flip a coin to see if the product stays in its current place 
+                     * or instead gets placed here.
+                     * 
+                     * Otherwise the product gets placed at this shelf.
+                     */
+                    if (usedIdDictionary.ContainsKey(currentUsedId.Value))
+                    {
+                        //50% chance to use this shelf for this product instead.
+                        if (Rng.NextBoolean())
+                        {
+                            Shelves[i] = currentUsedId.Value;
+                            Shelves[usedIdDictionary[currentUsedId.Value]] = null;
+                            usedIdDictionary[currentUsedId.Value] = i;
+                        }
+                    }
+                    else
+                    {
+                        //Place the product at this shelf.
+                        Shelves[i] = currentUsedId;
+                        usedIdDictionary.Add(currentUsedId.Value, i);
+                    }
+                }
+            }
+
+            //Place the unused Products wherever they might fit.
+            for (var i = 0; i < p1.Shelves.Length; i++)
+            {
+                //Determine the unused product ID
+                int? currentUnusedId;
+                if (i < cutoff)
+                {
+                    currentUnusedId = p2.Shelves[i];
+                }
+                else
+                {
                     currentUnusedId = p1.Shelves[i];
                 }
 
-                //If the current used shelf is empty and the unused shelf has a value, use the value.
-                if (!currentUsedId.HasValue && currentUnusedId.HasValue)
-                {
-                    var tempUsedId = currentUsedId;
-                    currentUsedId = currentUnusedId;
-                    currentUnusedId = tempUsedId;
-                }
-
-                //Assigned the used Product ID to the child's shelf.
-                Shelves[i] = currentUsedId;
-
-                //Keep track of duplicate used IDs.
-                if (currentUsedId.HasValue)
-                {
-                    var currentUsedIdValue = currentUsedId.Value;
-                    
-                    if (usedIds.Contains(currentUsedIdValue))
-                    {
-                        duplicateUsedIds.Add(currentUsedIdValue);
-                    }
-                    else
-                    {
-                        usedIds.Add(currentUsedIdValue);
-                    }
-                }
-
-                //Keep track of duplicate unused IDs.
+                //Place the unused Product IDs
                 if (currentUnusedId.HasValue)
                 {
-                    var currentUnusedIdValue = currentUnusedId.Value;
-
-                    if (unusedIds.Contains(currentUnusedIdValue))
+                    //Skip this Product if it has already been placed.
+                    if (usedIdDictionary.ContainsKey(currentUnusedId.Value))
                     {
-                        duplicateUnusedIds.Enqueue(currentUnusedIdValue);
+                        continue;
+                    }
+
+                    //Track this unused Product ID if it hasn't been already. If it has, ponder potential placement
+                    if (unusedIdDictionary.ContainsKey(currentUnusedId.Value))
+                    {
+                        /**
+                         * If both the current shelf and the shelf of the previously unused Product ID has
+                         * a product in it, TODO
+                         */
+                        if (Shelves[i].HasValue && Shelves[unusedIdDictionary[currentUnusedId.Value]].HasValue)
+                        {
+                            //Do nothing.
+                        }
+                        //If this shelf has a Product, place the unused Product ID in the previously unused shelf
+                        else if (Shelves[i].HasValue)
+                        {
+                            Shelves[unusedIdDictionary[currentUnusedId.Value]] = currentUnusedId;
+                            usedIdDictionary.Add(currentUnusedId.Value, unusedIdDictionary[currentUnusedId.Value]);
+                            unusedIdDictionary.Remove(currentUnusedId.Value);
+                        }
+                        //If the previously unused shelf has a product and this one is empty, place the unused Product here.
+                        else if (Shelves[unusedIdDictionary[currentUnusedId.Value]].HasValue)
+                        {
+                            Shelves[i] = currentUnusedId;
+                            usedIdDictionary.Add(currentUnusedId.Value, i);
+                            unusedIdDictionary.Remove(currentUnusedId.Value);
+                        }
+                        //Neither shelf has a product. Pick one randomly.
+                        else
+                        {
+                            if (Rng.NextBoolean())
+                            {
+                                Shelves[i] = currentUnusedId;
+                                usedIdDictionary.Add(currentUnusedId.Value, i);
+                            }
+                            else
+                            {
+                                Shelves[unusedIdDictionary[currentUnusedId.Value]] = currentUnusedId;
+                                usedIdDictionary.Add(currentUnusedId.Value, unusedIdDictionary[currentUnusedId.Value]);
+                            }
+
+                            unusedIdDictionary.Remove(currentUnusedId.Value);
+                        }
                     }
                     else
                     {
-                        unusedIds.Add(currentUnusedIdValue);
+                        unusedIdDictionary.Add(currentUnusedId.Value, i);
                     }
                 }
             }
 
-            //if(duplicateUnusedIds.Count != duplicateUsedIds.Count)
-            //{
-            //    Console.WriteLine($"Parent1: {p1}");
-            //    Console.WriteLine($"Parent2: {p2}");
-            //    Console.WriteLine($"Child  : {this}");
-            //}
-
-            //Console.WriteLine($"Parent1    : {p1}");
-            //Console.WriteLine($"Parent2    : {p2}");
-            var childPreReconcileString = $"Child         : {this}";
-            var duplicateUnusedIdsList = duplicateUnusedIds.ToList();
-
-
-            if (Shelves.All(s => s.HasValue))
+            //Place the straggling items in random locations in the warehouse.
+            if (unusedIdDictionary.Any())
             {
-                //Console.WriteLine(this);
-                var x = 1;
-            }
-
-            //If there are no missing or duplicate IDs to reconcile, we are finished here.
-            if (duplicateUnusedIds.Count == 0 && duplicateUsedIds.Count == 0) return;
-
-            //Iterate through the child and reconcile duplicate or missing product IDs
-            var duplicateIdsEncountered = new HashSet<int>();
-            var duplicateIdsReplaced = new HashSet<int>();
-            for (var i = 0; i < Shelves.Length; i++)
-            {
-                var currentProductId = Shelves[i];
-
-                if (currentProductId.HasValue)
+                //Find all the empty shelves.
+                var emptyShelves = new List<int>();
+                for (var i = 0; i < Shelves.Length; i++)
                 {
-                    var currentProductIdValue = currentProductId.Value;
-
-                    //Consider replacing encountered duplicate used value.
-                    if (duplicateUsedIds.Contains(currentProductIdValue))
-                    {
-                        //If a previous instance of this duplicate used ID has already been replaced, skip this ID
-                        if (duplicateIdsReplaced.Contains(currentProductIdValue))
-                        {
-                            continue;
-                        }
-
-                        //This duplicate used ID has already been encountered and skipped. Replace this one.
-                        if (duplicateIdsEncountered.Contains(currentProductIdValue))
-                        {
-                            if(duplicateUnusedIds.TryDequeue(out int unusedId)) {
-                                Shelves[i] = unusedId;
-                            }
-                            else
-                            {
-                                Shelves[i] = null;
-                            }
-
-                            duplicateIdsReplaced.Add(currentProductIdValue);
-                        }
-                        else //This is the first time encountering this duplicate used ID. 50% chance to replace it now.
-                        {
-                            var isReplace = Rng.NextDouble() < 0.5;
-
-                            if (isReplace)
-                            {
-                                if(duplicateUnusedIds.TryDequeue(out int unusedId))
-                                {
-                                    Shelves[i] = unusedId;
-                                }
-                                else
-                                {
-                                    Shelves[i] = null;
-                                }
-
-                                duplicateIdsReplaced.Add(currentProductIdValue);
-                            }
-                            else
-                            {
-                                duplicateIdsEncountered.Add(currentProductIdValue);
-                            }
-                        }
-                    }
+                    if (!Shelves[i].HasValue) emptyShelves.Add(i);
                 }
-                //else
-                //{
-                //    var p1Val = p1.Shelves[i];
-                //    var p2Val = p2.Shelves[i];
 
-                //    if((p1Val.HasValue ^ p2Val.HasValue))
-                //    {
-                //        var potentialUnusedVariable = p1Val;
-                //        if (!potentialUnusedVariable.HasValue) potentialUnusedVariable = p2Val;
+                foreach(var unplacedProduct in unusedIdDictionary.Keys)
+                {
+                    var shelf = emptyShelves[Rng.Next(emptyShelves.Count)];
 
-                //        if (duplicateUnusedIds.Contains(potentialUnusedVariable.Value))
-                //        {
-                //            var isReplace = Rng.NextDouble() < 0.5;
-
-                //            if (isReplace)
-                //            {
-                //                if(duplicateUnusedIds.)
-                //            }
-
-                //            Shelves[i] = potentialUnusedVariable;
-                //        }
-                //    }
-                //}
-            }
-
-            //Console.WriteLine($"Reconciled : {this}");
-
-            if (p1.Shelves.All(s => s.HasValue))
-            {
-                var i = 1;
-            }
-
-            if (p2.Shelves.All(s => s.HasValue))
-            {
-                var i = 1;
-            }
-
-            if (Shelves.All(s => s.HasValue))
-            {
-                var i = 1;
-            }
-
-            if (Shelves.Distinct().ToArray().Length < Shelves.Length)
-            {
-                Console.WriteLine($"Dupe Used IDs  : {string.Join("  ", duplicateUsedIds)}");
-                Console.WriteLine($"Dupe Unused IDs: {string.Join("  ", duplicateUnusedIdsList)}");
-                Console.WriteLine($"Parent1        : {p1}");
-                Console.WriteLine($"Parent2        : {p2}");
-                Console.WriteLine(childPreReconcileString);
-                Console.WriteLine($"Reconciled     : {this}");
-
-                var n = 1;
-            }
+                    Shelves[shelf] = unplacedProduct;
+                    emptyShelves.Remove(shelf);
+                }
+            }           
         }
 
         public void Mutate(decimal probability)
         {
-            if (Shelves.All(s => s.HasValue))
-            {
-                var i = 1;
-            }
-
             //Randomly select two shelves
             var shelf1Pos = Rng.Next(Shelves.Length);
             var shelfPos2 = Rng.Next(Shelves.Length);
@@ -281,11 +211,6 @@ namespace TaskRunner.Organisms
             var tempShelf = Shelves[shelf1Pos];
             Shelves[shelf1Pos] = Shelves[shelfPos2];
             Shelves[shelfPos2] = tempShelf;
-
-            if (Shelves.All(s => s.HasValue))
-            {
-                var i = 1;
-            }
         }
 
         public long Score()

@@ -15,7 +15,7 @@ namespace TaskRunner
         {
             var rng = new Random();
 
-            var products = Enumerable.Range(0, 7).Select(x => new Product
+            var products = Enumerable.Range(0, 20).Select(x => new Product
             {
                 Id = x + 1,
                 ProductName = new string(Enumerable.Range(0, 9).Select(n => (char)('a' + rng.Next(0, 26))).ToArray())
@@ -23,7 +23,7 @@ namespace TaskRunner
 
             var pickTickets = Enumerable.Range(0, 100).Select(x =>
             {
-                var pickTicketSize = rng.Next(1, 7);
+                var pickTicketSize = rng.Next(1, 4);
                 var productIds = new int[pickTicketSize];
 
                 var pickIndex = 0;
@@ -57,21 +57,15 @@ namespace TaskRunner
             })
                 .ToArray();
 
-            var initialPopulation = Enumerable.Range(0, 300)
-                .Select(x => new Warehouse(aisleCount: 1, aisleDepth: 8, products: products, pickTickets: pickTickets))
+            var initialPopulation = Enumerable.Range(0, 100)
+                .Select(x => new Warehouse(aisleCount: 3, aisleDepth: 20, products: products, pickTickets: pickTickets))
                 .ToArray();
 
-            var emptyPopulation = Enumerable.Range(0, 300)
-                .Select(x => new Warehouse(aisleCount: 1, aisleDepth: 8, products: products, pickTickets: pickTickets))
+            var emptyPopulation = Enumerable.Range(0, 100)
+                .Select(x => new Warehouse(aisleCount: 3, aisleDepth: 20, products: products, pickTickets: pickTickets))
                 .ToArray();
 
-            //var initialPopulation = new IncrementingBoard[200];
-            //for(int i = 0; i < initialPopulation.Length; i++)
-            //{
-            //    initialPopulation[i] = new IncrementingBoard(200);
-            //}
-
-            var runner = new Runner(initialPopulation: initialPopulation, emptyPopulation: emptyPopulation, iterations: 1000, mutationRate: 0.02m, matePopulationCutoff:20, keepTopCutoff: 3) ;
+            var runner = new Runner(initialPopulation: initialPopulation, emptyPopulation: emptyPopulation, iterations: 1000, mutationRate: 0.02m, matePopulationCutoff: 16, keepTopCutoff: 3) ;
             runner.Start();
         }
     }

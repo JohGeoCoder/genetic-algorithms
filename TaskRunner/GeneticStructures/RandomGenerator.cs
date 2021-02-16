@@ -26,6 +26,7 @@ namespace TaskRunner.GeneticStructures
         public int Next(int i) => Rng.Next(i);
         public int Next(int i, int j) => Rng.Next(i, j);
         public double NextDouble() => Rng.NextDouble();
+        public bool NextBoolean() => Rng.NextDouble() < 0.5;
 
     }
 }
