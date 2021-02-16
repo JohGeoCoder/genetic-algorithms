@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TaskRunner.Organisms;
 
 namespace TaskRunner.GeneticStructures
 {
@@ -44,11 +45,11 @@ namespace TaskRunner.GeneticStructures
         protected int KeepTopCutoff { get; set; }
         private IOrganism AbsoluteBestOrganism { get; set; }
 
-        public Runner(IEnumerable<IOrganism> initialPopulation, int iterations = 10000, decimal mutationRate = 0.02m, int matePopulationCutoff = 20, int keepTopCutoff = 5)
+        public Runner(IEnumerable<IOrganism> initialPopulation, IEnumerable<IOrganism> emptyPopulation, int iterations = 10000, decimal mutationRate = 0.02m, int matePopulationCutoff = 20, int keepTopCutoff = 5)
         {
             Iterations = iterations;
             Population = new Population(initialPopulation, Rng);
-            NextGeneration = new Population(initialPopulation, Rng);
+            NextGeneration = new Population(emptyPopulation, Rng);
             MutationRate = mutationRate;
             MatePopulationCutoff = matePopulationCutoff;
             KeepTopCutoff = keepTopCutoff;
@@ -60,6 +61,7 @@ namespace TaskRunner.GeneticStructures
 
             while(iteration < Iterations)
             {
+                Console.WriteLine($"Generation {iteration}");
                 iteration++;
 
                 var scoredOrganisms = Population.Organisms.Select(o => new
