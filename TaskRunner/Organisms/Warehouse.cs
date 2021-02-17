@@ -201,7 +201,7 @@ namespace TaskRunner.Organisms
                 var xAvg = productCoordinates.Average(c => c[0]);
                 var yAvg = productCoordinates.Average(c => c[1]);
 
-                score += (int)(yAvg + xAvg);
+                score += (int)(yAvg * yAvg + xAvg * xAvg);
             }
 
             return score;
