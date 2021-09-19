@@ -12,6 +12,7 @@ namespace TaskRunner.Organisms
         public Dictionary<int, Product> Products { get; set; }
         public PickTicket[] PickTickets { get; set; }
         public int?[] Shelves { get; set; }
+        public Dictionary<int, int?> ProductLocation { get; set; } = new Dictionary<int, int?>();
         private int AisleDepth { get; set; }
         private RandomGenerator Rng { get; set; } = RandomGenerator.GetInstance();
 
@@ -19,6 +20,11 @@ namespace TaskRunner.Organisms
         public Warehouse(int aisleCount, int aisleDepth, IEnumerable<Product> products, IEnumerable<PickTicket> pickTickets)
         {
             Shelves = new int?[aisleCount * aisleDepth];
+            Products = products.ToDictionary(k => k.Id, v => v);
+            AisleDepth = aisleDepth;
+            PickTickets = pickTickets.ToArray();
+
+            ProductLocation = products.ToDictionary(p => p.Id, v => (int?)null);
 
             //Randomly place the items on the shelves.
             var shelfIndices = Enumerable.Range(0, Shelves.Length).ToList();
@@ -27,14 +33,20 @@ namespace TaskRunner.Organisms
                 var tempIndex = Rng.Next(0, shelfIndices.Count);
                 var randomShelfIndex = shelfIndices[tempIndex];
 
-                Shelves[randomShelfIndex] = product.Id;
+                SetShelf(randomShelfIndex, product.Id);
 
                 shelfIndices.RemoveAt(tempIndex);
-            }
+            }           
+        }
 
-            AisleDepth = aisleDepth;
-            Products = products.ToDictionary(k => k.Id, v => v);
-            PickTickets = pickTickets.ToArray();
+        private void SetShelf(int shelfPosition, int? newProductId)
+        {
+            Shelves[shelfPosition] = newProductId;
+
+            if (newProductId.HasValue)
+            {
+                ProductLocation[newProductId.Value] = shelfPosition;
+            }
         }
 
         public void Clone(IOrganism parent)
@@ -44,7 +56,7 @@ namespace TaskRunner.Organisms
             //Copy the shelves
             for (int i = 0; i < Shelves.Length; i++)
             {
-                Shelves[i] = p.Shelves[i];
+                SetShelf(i, p.Shelves[i]);
             }
         }
 
@@ -55,7 +67,7 @@ namespace TaskRunner.Organisms
 
             for (int n = 0; n < Shelves.Length; n++)
             {
-                Shelves[n] = null;
+                SetShelf(n, null);
             }
 
             var shelfLength = p1.Shelves.Length;
@@ -94,15 +106,15 @@ namespace TaskRunner.Organisms
                         //50% chance to use this shelf for this product instead.
                         if (Rng.NextBoolean())
                         {
-                            Shelves[i] = currentUsedId.Value;
-                            Shelves[usedIdDictionary[currentUsedId.Value]] = null;
+                            SetShelf(i, currentUsedId.Value);
+                            SetShelf(usedIdDictionary[currentUsedId.Value], null);
                             usedIdDictionary[currentUsedId.Value] = i;
                         }
                     }
                     else
                     {
                         //Place the product at this shelf.
-                        Shelves[i] = currentUsedId;
+                        SetShelf(i, currentUsedId);
                         usedIdDictionary.Add(currentUsedId.Value, i);
                     }
                 }
@@ -150,7 +162,7 @@ namespace TaskRunner.Organisms
                 {
                     var shelf = emptyShelves[Rng.Next(emptyShelves.Count)];
 
-                    Shelves[shelf] = unplacedProduct;
+                    SetShelf(shelf, unplacedProduct);
                     emptyShelves.Remove(shelf);
                 }
             }           
@@ -164,8 +176,8 @@ namespace TaskRunner.Organisms
 
             //Swap their contents
             var tempShelf = Shelves[shelf1Pos];
-            Shelves[shelf1Pos] = Shelves[shelfPos2];
-            Shelves[shelfPos2] = tempShelf;
+            SetShelf(shelf1Pos, Shelves[shelfPos2]);
+            SetShelf(shelfPos2, tempShelf);
         }
 
         public long Score()
@@ -209,15 +221,7 @@ namespace TaskRunner.Organisms
 
         private int[] GetProductCoordinates(int productId)
         {
-            var productShelfIndex = -1;
-            for(int i = 0; i < Shelves.Length; i++)
-            {
-                if(Shelves[i] == productId)
-                {
-                    productShelfIndex = i;
-                    break;
-                }
-            }
+            var productShelfIndex = ProductLocation[productId].Value;
 
             return new int[] { productShelfIndex / AisleDepth, productShelfIndex % AisleDepth };
         }
