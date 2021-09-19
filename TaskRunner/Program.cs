@@ -15,7 +15,7 @@ namespace TaskRunner
         {
             var rng = new Random();
 
-            var products = Enumerable.Range(0, 20).Select(x => new Product
+            var products = Enumerable.Range(0, 1000).Select(x => new Product
             {
                 Id = x + 1,
                 ProductName = new string(Enumerable.Range(0, 9).Select(n => (char)('a' + rng.Next(0, 26))).ToArray())
@@ -23,7 +23,7 @@ namespace TaskRunner
 
             var pickTickets = Enumerable.Range(0, 100).Select(x =>
             {
-                var pickTicketSize = rng.Next(1, 4);
+                var pickTicketSize = rng.Next(1, 15);
                 var productIds = new int[pickTicketSize];
 
                 var pickIndex = 0;
@@ -58,14 +58,14 @@ namespace TaskRunner
                 .ToArray();
 
             var initialPopulation = Enumerable.Range(0, 100)
-                .Select(x => new Warehouse(aisleCount: 3, aisleDepth: 20, products: products, pickTickets: pickTickets))
+                .Select(x => new Warehouse(aisleCount: 30, aisleDepth: 100, products: products, pickTickets: pickTickets))
                 .ToArray();
 
             var emptyPopulation = Enumerable.Range(0, 100)
-                .Select(x => new Warehouse(aisleCount: 3, aisleDepth: 20, products: products, pickTickets: pickTickets))
+                .Select(x => new Warehouse(aisleCount: 30, aisleDepth: 100, products: products, pickTickets: pickTickets))
                 .ToArray();
 
-            var runner = new Runner(initialPopulation: initialPopulation, emptyPopulation: emptyPopulation, iterations: 1000, mutationRate: 0.02m, matePopulationCutoff: 16, keepTopCutoff: 3) ;
+            var runner = new Runner(initialPopulation: initialPopulation, emptyPopulation: emptyPopulation, iterations: 1000, mutationRate: 0.05m, matePopulationCutoff: 30, keepTopCutoff: 10) ;
             runner.Start();
         }
     }
