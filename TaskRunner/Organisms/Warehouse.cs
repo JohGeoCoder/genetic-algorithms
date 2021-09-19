@@ -184,23 +184,17 @@ namespace TaskRunner.Organisms
         {
             long score = 0;
 
-            var productCoordinatesLookup = new Dictionary<int, int[]>();
-            foreach(var product in Products.Values)
-            {
-                productCoordinatesLookup.Add(product.Id, GetProductCoordinates(product.Id));
-            }
-
             //Score each pick ticket.
             foreach(var pickTicket in PickTickets)
             {
                 //Calculate the spread of the pick ticket items
                 for(int i = 0; i < pickTicket.ProductIds.Length - 1; i++)
                 {
-                    var pick1Coords = productCoordinatesLookup[pickTicket.ProductIds[i]];
+                    var pick1Coords = GetProductCoordinates(pickTicket.ProductIds[i]);
 
                     for(int j = i; j < pickTicket.ProductIds.Length; j++)
                     {
-                        var pick2Coords = productCoordinatesLookup[pickTicket.ProductIds[j]];
+                        var pick2Coords = GetProductCoordinates(pickTicket.ProductIds[j]);
 
                         var distance = (long)Math.Sqrt((pick2Coords[0] - pick1Coords[0]) * (pick2Coords[0] - pick1Coords[0]) + (pick2Coords[1] - pick1Coords[1]) * (pick2Coords[1] - pick1Coords[1]));
 
@@ -209,7 +203,7 @@ namespace TaskRunner.Organisms
                 }
 
                 //Calculate the distance of the center of mass of the items from the origin for each pick ticket
-                var productCoordinates = pickTicket.ProductIds.Select(p => productCoordinatesLookup[p]);
+                var productCoordinates = pickTicket.ProductIds.Select(p => GetProductCoordinates(p));
                 var xAvg = productCoordinates.Average(c => c[0]);
                 var yAvg = productCoordinates.Average(c => c[1]);
 
