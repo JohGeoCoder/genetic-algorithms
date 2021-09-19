@@ -55,17 +55,41 @@ namespace TaskRunner
 
                 return pickTicket;
             })
-                .ToArray();
+            .ToArray();
+
+            var aisleCount = 30;
+            var aisleDepth = 100;
+            var shelfCount = aisleCount * aisleDepth;
+            var distanceLookup = new long[shelfCount][];
+            for(int i = 0; i < distanceLookup.Length; i++)
+            {
+                distanceLookup[i] = new long[shelfCount];
+            }
+
+            for (int p1 = 0; p1 < shelfCount; p1++)
+            {
+                for (int p2 = 0; p2 < shelfCount; p2++)
+                {
+                    var p1X = p1 / aisleDepth;
+                    var p1Y = p1 % aisleDepth;
+                    var p2X = p2 / aisleDepth;
+                    var p2Y = p2 % aisleDepth;
+
+                    var distance = (long)Math.Sqrt((p2X - p1X) * (p2X - p1X) + (p2Y - p1Y) * (p2Y - p1Y));
+
+                    distanceLookup[p1][p2] = distance;
+                }
+            }
 
             var initialPopulation = Enumerable.Range(0, 100)
-                .Select(x => new Warehouse(aisleCount: 30, aisleDepth: 100, products: products, pickTickets: pickTickets))
+                .Select(x => new Warehouse(aisleCount: 30, aisleDepth: 100, products: products, pickTickets: pickTickets, distanceLookup: distanceLookup))
                 .ToArray();
 
             var emptyPopulation = Enumerable.Range(0, 100)
-                .Select(x => new Warehouse(aisleCount: 30, aisleDepth: 100, products: products, pickTickets: pickTickets))
+                .Select(x => new Warehouse(aisleCount: 30, aisleDepth: 100, products: products, pickTickets: pickTickets, distanceLookup: distanceLookup))
                 .ToArray();
 
-            var runner = new Runner(initialPopulation: initialPopulation, emptyPopulation: emptyPopulation, iterations: 1000, mutationRate: 0.05m, matePopulationCutoff: 30, keepTopCutoff: 10) ;
+            var runner = new Runner(initialPopulation: initialPopulation, emptyPopulation: emptyPopulation, iterations: 1000, mutationRate: 0.05m, matePopulationCutoff: 30, keepTopCutoff: 10);
             runner.Start();
         }
     }

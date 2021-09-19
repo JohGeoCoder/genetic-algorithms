@@ -13,11 +13,12 @@ namespace TaskRunner.Organisms
         public PickTicket[] PickTickets { get; set; }
         public int?[] Shelves { get; set; }
         public Dictionary<int, int?> ProductLocation { get; set; } = new Dictionary<int, int?>();
+        public long[][] DistanceLookup { get; set; }
         private int AisleDepth { get; set; }
         private RandomGenerator Rng { get; set; } = RandomGenerator.GetInstance();
 
 
-        public Warehouse(int aisleCount, int aisleDepth, IEnumerable<Product> products, IEnumerable<PickTicket> pickTickets)
+        public Warehouse(int aisleCount, int aisleDepth, IEnumerable<Product> products, IEnumerable<PickTicket> pickTickets, long[][] distanceLookup)
         {
             Shelves = new int?[aisleCount * aisleDepth];
             Products = products.ToDictionary(k => k.Id, v => v);
@@ -36,7 +37,9 @@ namespace TaskRunner.Organisms
                 SetShelf(randomShelfIndex, product.Id);
 
                 shelfIndices.RemoveAt(tempIndex);
-            }           
+            }
+
+            DistanceLookup = distanceLookup;
         }
 
         private void SetShelf(int shelfPosition, int? newProductId)
@@ -190,15 +193,13 @@ namespace TaskRunner.Organisms
                 //Calculate the spread of the pick ticket items
                 for(int i = 0; i < pickTicket.ProductIds.Length - 1; i++)
                 {
-                    var pick1Coords = GetProductCoordinates(pickTicket.ProductIds[i]);
+                    var pick1Location = GetProductLocation(pickTicket.ProductIds[i]);
 
-                    for(int j = i; j < pickTicket.ProductIds.Length; j++)
+                    for(int j = i + 1; j < pickTicket.ProductIds.Length; j++)
                     {
-                        var pick2Coords = GetProductCoordinates(pickTicket.ProductIds[j]);
-
-                        var distance = (long)Math.Sqrt((pick2Coords[0] - pick1Coords[0]) * (pick2Coords[0] - pick1Coords[0]) + (pick2Coords[1] - pick1Coords[1]) * (pick2Coords[1] - pick1Coords[1]));
-
-                        score += distance;
+                        var pick2Location = GetProductLocation(pickTicket.ProductIds[j]);
+                        
+                        score += DistanceLookup[pick1Location][pick2Location];
                     }
                 }
 
@@ -219,6 +220,8 @@ namespace TaskRunner.Organisms
 
             return new int[] { productShelfIndex / AisleDepth, productShelfIndex % AisleDepth };
         }
+
+        private int GetProductLocation(int productId) => ProductLocation[productId].Value;
 
         public override string ToString()
         {
