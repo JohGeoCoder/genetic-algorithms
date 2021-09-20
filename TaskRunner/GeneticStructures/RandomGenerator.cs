@@ -10,14 +10,22 @@ namespace TaskRunner.GeneticStructures
 
         private readonly Random Rng;
 
-        private RandomGenerator()
+        private RandomGenerator(int? seed = null)
         {
-            Rng = new Random();
+            if (seed.HasValue)
+            {
+                Rng = new Random(seed.Value);
+            }
+            else
+            {
+                Rng = new Random();
+            }
+            
         }
 
-        public static RandomGenerator GetInstance()
+        public static RandomGenerator GetInstance(int? seed = null)
         {
-            if (Instance == null) Instance = new RandomGenerator();
+            if (Instance == null) Instance = new RandomGenerator(seed);
 
             return Instance;
         }

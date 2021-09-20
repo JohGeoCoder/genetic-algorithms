@@ -13,17 +13,17 @@ namespace TaskRunner
     {
         static void Main(string[] args)
         {
-            var rng = new Random();
+            var randomGenerator = RandomGenerator.GetInstance(123);
 
-            var products = Enumerable.Range(0, 1000).Select(x => new Product
+            var products = Enumerable.Range(0, 100).Select(x => new Product
             {
                 Id = x + 1,
-                ProductName = new string(Enumerable.Range(0, 9).Select(n => (char)('a' + rng.Next(0, 26))).ToArray())
+                ProductName = new string(Enumerable.Range(0, 9).Select(n => (char)('a' + randomGenerator.Next(0, 26))).ToArray())
             }).ToArray();
 
             var pickTickets = Enumerable.Range(0, 100).Select(x =>
             {
-                var pickTicketSize = rng.Next(1, 15);
+                var pickTicketSize = randomGenerator.Next(1, 8);
                 var productIds = new int[pickTicketSize];
 
                 var pickIndex = 0;
@@ -32,7 +32,7 @@ namespace TaskRunner
                     //Probability this product will be next on the pick ticket.
                     var selectThreshold = (double)pickTicketSize / (products.Length - i);
 
-                    if(rng.NextDouble() < selectThreshold)
+                    if(randomGenerator.NextDouble() < selectThreshold)
                     {
                         var productId = products[i].Id;
 
@@ -58,7 +58,7 @@ namespace TaskRunner
             .ToArray();
 
             var aisleCount = 30;
-            var aisleDepth = 100;
+            var aisleDepth = 10;
             var shelfCount = aisleCount * aisleDepth;
             var distanceLookup = new long[shelfCount][];
             for(int i = 0; i < distanceLookup.Length; i++)
@@ -82,14 +82,14 @@ namespace TaskRunner
             }
 
             var initialPopulation = Enumerable.Range(0, 100)
-                .Select(x => new Warehouse(aisleCount: 30, aisleDepth: 100, products: products, pickTickets: pickTickets, distanceLookup: distanceLookup))
+                .Select(x => new Warehouse(aisleCount: aisleCount, aisleDepth: aisleDepth, products: products, pickTickets: pickTickets, distanceLookup: distanceLookup))
                 .ToArray();
 
             var emptyPopulation = Enumerable.Range(0, 100)
-                .Select(x => new Warehouse(aisleCount: 30, aisleDepth: 100, products: products, pickTickets: pickTickets, distanceLookup: distanceLookup))
+                .Select(x => new Warehouse(aisleCount: aisleCount, aisleDepth: aisleDepth, products: products, pickTickets: pickTickets, distanceLookup: distanceLookup))
                 .ToArray();
 
-            var runner = new Runner(initialPopulation: initialPopulation, emptyPopulation: emptyPopulation, iterations: 1000, mutationRate: 0.05m, matePopulationCutoff: 30, keepTopCutoff: 10);
+            var runner = new Runner(initialPopulation: initialPopulation, emptyPopulation: emptyPopulation, iterations: 50, mutationRate: 0.05m, matePopulationCutoff: 30, keepTopCutoff: 10);
             runner.Start();
         }
     }

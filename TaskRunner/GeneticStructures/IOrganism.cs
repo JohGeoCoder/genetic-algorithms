@@ -12,11 +12,11 @@ namespace TaskRunner.GeneticStructures
     public class Population
     {
         public IOrganism[] Organisms { get; }
-        public Random Rng { get; }
+        public RandomGenerator Rng { get; }
         public decimal MutationRate { get; set; }
         public long Score => Organisms.Sum(o => o.Score());
 
-        public Population(IEnumerable<IOrganism> initialPopulation, Random rng)
+        public Population(IEnumerable<IOrganism> initialPopulation, RandomGenerator rng)
         {
             Rng = rng;
             Organisms = initialPopulation.ToArray();
@@ -39,7 +39,7 @@ namespace TaskRunner.GeneticStructures
         protected int Iterations { get; }
         protected Population Population { get; set; }
         protected Population NextGeneration { get; set; }
-        protected Random Rng { get; } = new Random();
+        protected RandomGenerator Rng { get; } = RandomGenerator.GetInstance(123);
         protected decimal MutationRate { get; set; }
         protected int MatePopulationCutoff { get; set; }
         protected int KeepTopCutoff { get; set; }
