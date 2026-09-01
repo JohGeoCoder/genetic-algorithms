@@ -89,7 +89,7 @@ namespace TaskRunner
                 .Select(x => new Warehouse(aisleCount: aisleCount, aisleDepth: aisleDepth, products: products, pickTickets: pickTickets, distanceLookup: distanceLookup))
                 .ToArray();
 
-            var runner = new Runner(initialPopulation: initialPopulation, emptyPopulation: emptyPopulation, iterations: 500, mutationRate: 0.05m, matePopulationCutoff: 30, keepTopCutoff: 10);
+            var runner = new Runner(initialPopulation: initialPopulation, emptyPopulation: emptyPopulation, iterations: 50000, mutationRate: 0.05m, matePopulationCutoff: 30, keepTopCutoff: 10);
             runner.Start();
         }
     }
