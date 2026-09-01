@@ -112,7 +112,7 @@ namespace TaskRunner.GeneticStructures
                 //Switch the current population and the next generation.
                 var tempGeneration = Population;
                 Population = NextGeneration;
-                NextGeneration = Population;
+                NextGeneration = tempGeneration;
 
                 Console.WriteLine($"Iteration {iteration}: {Population.Score}");
                 if(iteration % 10 == 0)
