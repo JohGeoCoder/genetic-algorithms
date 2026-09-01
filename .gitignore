@@ -36,6 +36,6 @@ jspm_packages
 # Optional REPL history
 .node_repl_history
 /.vs/TaskRunner
-/TaskRunner/bin/Debug/netcoreapp3.1
+/TaskRunner/bin
 /TaskRunner/obj
 /TaskRunner/TaskRunner.csproj.user
