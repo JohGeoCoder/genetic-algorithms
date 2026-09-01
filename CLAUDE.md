@@ -8,7 +8,7 @@ A C# console application that experiments with genetic algorithms. The main prob
 
 ## Commands
 
-Requires the .NET SDK (project targets `netcoreapp3.1`).
+Requires the .NET SDK (project targets `net8.0`).
 
 ```bash
 dotnet build TaskRunner.sln     # build
